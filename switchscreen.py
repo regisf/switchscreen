@@ -251,7 +251,7 @@ class SwitchScreen(object):
             commands = self.to_command(config.get_config_for(screen_count))
         else:
             # Todo : raise exception
-            print "No configuration for this"
+            #print "No configuration for this"
             return
         
         # Wait to allow xrandr to find plugged devices
@@ -363,22 +363,24 @@ def main():
     parser.add_option("-l", "--log-file", dest="log_file",
                       type="string", help="Set the log file name",
                       metavar="logfile")
-    parser.add_option('-s', '--stop', dest="stop_daemon",
-                      action="store_true",
-                      help="Stop daemon")
-    parser.add_option('-u', '--restart', dest="restart_daemon",
-                      action="store_true",
-                      help="Restart daemon")
+    #parser.add_option('-s', '--stop', dest="stop_daemon",
+    #                  action="store_true",
+    #                  help="Stop daemon")
+    #parser.add_option('-u', '--restart', dest="restart_daemon",
+    #                  action="store_true",
+    #                  help="Restart daemon")
     parser.add_option('-c', '--show-config', dest='show_conf',
                       action="store_true",
                       help="Show configuration")
-    parser.add_option('-i', '--initiate-config', dest='initiate',
-                      action='store_true',
-                      help='Display the computed configuration file')
+    #parser.add_option('-i', '--initiate-config', dest='initiate',
+    #                  action='store_true',
+    #                  help='Display the computed configuration file')
     parser.add_option('-m', '--simulate', dest='simulate',
                       type="int", default=0, action="store",
                       metavar="number-of-screen",
                       help="Process a simulation and display xrandr command line (Debug purpose)")
+    #parser.add_option('-a', '--alive', dest="alive", action="store_true",
+    #                  help="Test if a switchscreen program is running yet")
     
     options,args = parser.parse_args()
     
