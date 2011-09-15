@@ -1,41 +1,68 @@
-#Configuration file for switch screen
-#This is a Python Script. Use it with caution and make sure
-#to set the permission to 600. The switchscreen.py script will
-#test it and refuse to work if this file has wrong permission.
-
+# Configuration file for switch screen
+# This is a Python Script use it with caution.
 {
     'configuration': {
+        # Number of seconds to wait between each test
         'time_to_wait': 1,
-        'root_path' : '~', # Home path
+        
+        # The root daemon patH. Usually the home path
+        'root_path' : '~',
+        
+        # The program need to be started as a daemon 
         'daemonize' : True,
+        
+        # I am really really stupid. The configuration file contains where the configuration file is... :)
         'config_path' : [],
-        'logfile' : "~/.swictchscreen.log",
-        'umask': 0
+            
+        # The log file name
+        'logfile' : ".switchscreen.log",
+        
+        # The daemon umask
+        'umask': 0,
+        
+        # The default configuration (see bellow)
+        'default': 2 # In my case
     },
+    
+    # Screen configuration
     'screen' : {
+        # Single screen
         1: {
+            # External screen
             'VGA1': {
+                # disable it
                 'display': False,
+                # All other option will be ignored
             },
+            # My Laptop screen
             'LVDS1': {
+                # Enable it
                 'display': True,
+                # Set it as main screen
                 'main': True,
+                # 
                 'pos': '0x0',
+                # THe screen resolution
                 'mode': '1366x768',
-                'refresh': '59.6'
+                #'refresh': '59.6'
             }
         },
+            
+        # External screen plugged
         2: {
             'VGA1': {
                 'display': True,
                 'pos': '0x0',
                 'mode': '1280x1024',
-                'refresh': '60.0197',
+                #'refresh': '60.0197',
                 'main': True
             },
             'LVDS1': {
                 'display' : False
             }
-        }
+        },
+            
+        # In the future the configuration using keywords will be implemented
+        # and using it like : switchscreen --config clone
     }
 }

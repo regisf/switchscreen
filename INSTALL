@@ -1,0 +1,76 @@
+INSTALL switchscreen
+====================
+
+Preambule
+---------
+
+In some case, other program may observe the screen configuration like krandrtray
+Be sure to disable it before testing switchscreen.
+
+To know your xrandr configuration open a shell and type ($ is the shell prompt):
+    $ xrandr
+Something like that will appear:
+
+    Screen 0: minimum 320 x 200, current 1366 x 1024, maximum 8192 x 8192
+    LVDS1 connected (normal left inverted right x axis y axis)
+       1366x768       59.6 +
+       1360x768       59.8     60.0  
+       1024x768       60.0  
+       800x600        60.3     56.2  
+       640x480        59.9  
+    VGA1 connected 1280x1024+0+0 (normal left inverted right x axis y axis) 338mm x 270mm
+       1280x1024      60.0*+
+       1024x768       75.1     70.1     60.0  
+       800x600        72.2     75.0     60.3     56.2  
+       640x480        72.8     75.0     60.0  
+       720x400        70.1  
+
+This means:
+    Screen 0 is the default screen. The first in the list bellow.
+    
+    LVDS1 is connected but not active (see star in VGA1). The prefered
+    resolution is 1366x768 at 59.6 Hz. It can handle resolutions 1360x768,
+    1024x768, 800x600 and 640x480.
+    
+    VGA1 is connected and active (see the star?). The prefered resolution is
+    1280x1024 at 60 Hz. The star indicate the current resolution. It can handle
+    resolutions 1280x1024, 1024x768, 800x600, 640x480, 720x400.
+    
+Open the switchscreenrc.sample  with a text editor and change screen resolution
+and default screen. Those configuration are mine. The configuration file is
+eavy commented.
+Save the file as .switchscreenrc in your home directory.
+
+Test only
+---------
+
+Start in a shell and type:
+    $ ./switchscreen.py -no-daemon
+    
+Unplug your external screen. It works ! If not, please send me a email.
+
+Home directory
+--------------
+
+Either you copy the switchscreen script in your ~/bin directory, either you
+can use setup.py with:
+    $ python setup.py install --prefix=~
+
+Global
+------
+
+Open a shell and type:
+    $ su -c "python setup.py install"
+    or
+    $ sudo python setup.py install
+
+Crash
+-----
+
+In some case xrandr or XWindow (I don't really know) Crash. Open a TTY shell
+with Ctrl+Alt+F1, log into it and type:
+    $ sudo killall kdm && sudo kdm &
+    or
+    $ su -c "killall kdm && kdm &"
+    
+to restart your XWindow system. GNOME use might use gdm instead of kdm.
