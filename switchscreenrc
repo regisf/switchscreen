@@ -1,0 +1,41 @@
+#Configuration file for switch screen
+#This is a Python Script. Use it with caution and make sure
+#to set the permission to 600. The switchscreen.py script will
+#test it and refuse to work if this file has wrong permission.
+
+{
+    'configuration': {
+        'time_to_wait': 1,
+        'root_path' : '~', # Home path
+        'daemonize' : True,
+        'config_path' : [],
+        'logfile' : "~/.swictchscreen.log",
+        'umask': 0
+    },
+    'screen' : {
+        1: {
+            'VGA1': {
+                'display': False,
+            },
+            'LVDS1': {
+                'display': True,
+                'main': True,
+                'pos': '0x0',
+                'mode': '1366x768',
+                'refresh': '59.6'
+            }
+        },
+        2: {
+            'VGA1': {
+                'display': True,
+                'pos': '0x0',
+                'mode': '1280x1024',
+                'refresh': '60.0197',
+                'main': True
+            },
+            'LVDS1': {
+                'display' : False
+            }
+        }
+    }
+}
