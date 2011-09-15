@@ -32,53 +32,6 @@ __author__ = u"Régis FLORET"
 __copyright__ = u"Copyright (c) Régis FLORET 2011"
 __version__ = "0.1"
 
-# For 0.2 release
-CONFIG_FILE_TEMPLATE = """
-#Configuration file for switch screen
-#This is a Python Script. Use it with caution and make sure
-#to set the permission to 600. The switchscreen.py script will
-#test it and refuse to work if this file has wrong permission.
-# Created using switchscreen --initiate-config
-{
-    'configuration': {
-        'time_to_wait': 1,
-        'root_path' : '~', # Home path
-        'daemonize' : True,
-        'config_path' : [],
-        'logfile' : "~/.swictchscreen.log",
-        'umask' : 0
-    },
-    'screen' : {
-        # Single screen
-        1: {
-            'VGA1': {
-                'display': False,
-            },
-            'LVDS1': {
-                'display': True,
-                'main': True,
-                'pos': '0x0',
-                'mode': '1366x768',
-                'refresh': '59.6'
-            }
-        },
-        # Two screens pluged
-        2: {
-            'VGA1': {
-                'display': True,
-                'pos': '0x0',
-                'mode': '1280x1024',
-                'refresh': '60.0197',
-                'main': True
-            },
-            'LVDS1': {
-                'display' : False
-            }
-        }
-    }
-}
-"""
-
 import os
 import sys
 import time
@@ -118,6 +71,7 @@ class Configuration(object):
     def __init__(self):
         """ Contructor. Create minimal config dict """
         self.__config_dict = {'configuration': {'config_path': [] }}
+        self.default_config = ''
         
     def __str__(self):
         """ Return the configuration dict as string (usefull for debugging) """
@@ -154,10 +108,9 @@ class Configuration(object):
     def read_config_file(self):
         """ Read the configuration file """
         config_found = False
-        print self.__config_dict['configuration']['config_path']
         for path in self.__config_dict['configuration']['config_path']:
+            
             path = os.path.join(os.path.expanduser(path), ".switchscreenrc")
-            print "Checking %s"%path
             if os.path.isfile(path):
                 config_found = True
                 break
@@ -170,6 +123,10 @@ class Configuration(object):
             config_path = self.__config_dict['configuration']['config_path']
             self.__config_dict.update(eval(open(path, 'r').read()))
             self.__config_dict['configuration']['config_path'] += config_path
+
+            #if self.__config_dict['configuration'].has_key('default'):
+            #    print self.get_config_for(self.__config_dict['configuration']['default'])
+            
             self.set_log_file(self.__config_dict['configuration']['logfile'])
             
         except SyntaxError as e:
@@ -252,7 +209,7 @@ class SwitchScreen(object):
     def signal_hup(self, s, f):
         """ Reload configuration """
         Configuration.getConfig().read_config_file()
-        
+                
     def to_command(self, dico):
         """ Return a list of list of command from dictionnary """
         cmd = ""
@@ -264,6 +221,7 @@ class SwitchScreen(object):
                 if not dico[screen]['display']:
                     # Off screen disable all other options
                     cmd = "xrandr --output %s --off" % screen
+                    cmdlist.append(cmd)
                 else:
                     if dico[screen].has_key('pos'):
                         cmd += " --pos %s" % dico[screen]['pos']
@@ -274,8 +232,7 @@ class SwitchScreen(object):
                     if dico[screen].has_key('main'):
                         if dico[screen]['main']:
                             cmd += " --primary"
-
-            cmdlist.append(cmd)
+                    cmdlist.append(cmd)
         commands = []
         for cmd in cmdlist:
             commands.append(shlex.split(cmd))
@@ -285,7 +242,7 @@ class SwitchScreen(object):
             
         return commands
         
-    def switch_screen(self, screen_count):
+    def switch_screen(self, screen_count, execute=True):
         """ switch between configurations """
         logging.info("Switching screen")
         commands = None
@@ -294,10 +251,17 @@ class SwitchScreen(object):
             commands = self.to_command(config.get_config_for(screen_count))
         else:
             # Todo : raise exception
+            print "No configuration for this"
             return
         
+        # Wait to allow xrandr to find plugged devices
+        time.sleep(0.5) 
         for cmd in commands:
-            subprocess.Popen(cmd)
+            if execute == False:
+                # Simulation
+                print " ".join(cmd)
+            else:
+                subprocess.Popen(cmd)
 
     def get_screen_count(self, output):
         """ Parse xrandr output and get screens connected count """
@@ -346,10 +310,9 @@ class SwitchScreen(object):
             os.dup2(0, 1)
             os.dup2(0, 2)
 
-        log_handler.addHandler(logging.FileHandler(Configuration.getConfig().get_log_file(), encoding="UTF-8"))
-
     def main_loop(self):
         """ Process main loop """
+        #try:
         last_scr_count = self.check_screens()
         while not self.stop:
             current_scr_count = self.check_screens()
@@ -357,7 +320,12 @@ class SwitchScreen(object):
                 last_scr_count = current_scr_count
                 self.switch_screen(current_scr_count)
             time.sleep(Configuration.getConfig().get_time_to_wait())
-
+        #except Exception as e:
+        #    """ Crash restore the default configuration """
+        #    logging.error("Crash. Restore the default configuration.")
+        #    command = Configuration.getConfig().get_default_config()
+        #    subprocess.Popen(self.to_command(command))
+            
     def set_log_file(self, logfilename):
         """ Set the log file name """
         self.logfilename = logfilename
@@ -407,6 +375,10 @@ def main():
     parser.add_option('-i', '--initiate-config', dest='initiate',
                       action='store_true',
                       help='Display the computed configuration file')
+    parser.add_option('-m', '--simulate', dest='simulate',
+                      type="int", default=0, action="store",
+                      metavar="number-of-screen",
+                      help="Process a simulation and display xrandr command line (Debug purpose)")
     
     options,args = parser.parse_args()
     
@@ -431,11 +403,13 @@ def main():
     
     if options.restart_daemon == True:
         sys.exit('--restart option is TODO. Use SIGHUP instead')
-        
-    
+                
     switch = SwitchScreen()
+    if options.simulate > 0:
+        switch.switch_screen(options.simulate, False)
+        sys.exit()
     switch.daemonize()
     switch.main_loop()
-
+        
 if __name__ == '__main__':
     main()
