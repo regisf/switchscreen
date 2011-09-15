@@ -86,7 +86,13 @@ import subprocess
 import shlex
 import signal
 import optparse
-import datetime
+import logging
+
+# Create the logger instance
+log_handler = logging.getLogger('switchscreen')
+
+# Default log file name
+DEFAULT_LOG = os.path.expanduser("~/.switchscreen.log")
 
 class ConfigFileNotFound(Exception):
     """ Raised when the configuration file was not found """
@@ -110,7 +116,7 @@ class Configuration(object):
         return cls.__config
 
     def __init__(self):
-        """ Contructor """
+        """ Contructor. Create minimal config dict """
         self.__config_dict = {'configuration': {'config_path': [] }}
         
     def __str__(self):
@@ -148,8 +154,10 @@ class Configuration(object):
     def read_config_file(self):
         """ Read the configuration file """
         config_found = False
+        print self.__config_dict['configuration']['config_path']
         for path in self.__config_dict['configuration']['config_path']:
-            path = os.path.join(os.path.expanduser(path), "switchscreenrc")
+            path = os.path.join(os.path.expanduser(path), ".switchscreenrc")
+            print "Checking %s"%path
             if os.path.isfile(path):
                 config_found = True
                 break
@@ -158,7 +166,12 @@ class Configuration(object):
             raise ConfigFileNotFound("No configuration file found")
         
         try:
-            self.__config_dict = eval(open(path, 'r').read())
+            # Keep config_path
+            config_path = self.__config_dict['configuration']['config_path']
+            self.__config_dict.update(eval(open(path, 'r').read()))
+            self.__config_dict['configuration']['config_path'] += config_path
+            self.set_log_file(self.__config_dict['configuration']['logfile'])
+            
         except SyntaxError as e:
             raise ConfigSyntaxError("configuration file not well written: %s" %e)
         
@@ -186,7 +199,11 @@ class Configuration(object):
         
     def set_log_file(self, logfile):
         """ Set the log file """
-        self.__config_dict['configuration']['logfile'] = logfile
+        self.__config_dict['configuration']['logfile'] = os.path.expanduser(logfile)
+        
+    def get_log_file(self):
+        """ Return the log file name """
+        return self.__config_dict['configuration']['logfile']
 
     def add_config_path(self, path):
         """ Add a configuration path """
@@ -216,6 +233,12 @@ class SwitchScreen(object):
         self.logfilename = None
         self.stop = False
         self.install_signal()
+                
+        str = 'Starting switchscreen as %s'
+        if Configuration.getConfig().get_daemonize() == True:
+            logging.info(str % 'daemon')
+        else:
+            logging.info(str % 'console program.')
 
     def install_signal(self):
         """ Install signal handling """
@@ -256,10 +279,15 @@ class SwitchScreen(object):
         commands = []
         for cmd in cmdlist:
             commands.append(shlex.split(cmd))
+            
+        for command in cmdlist:
+            logging.info("Shell command : %s" % command)
+            
         return commands
         
     def switch_screen(self, screen_count):
         """ switch between configurations """
+        logging.info("Switching screen")
         commands = None
         config = Configuration.getConfig()
         if config.have_config_for(screen_count):
@@ -269,7 +297,6 @@ class SwitchScreen(object):
             return
         
         for cmd in commands:
-            print cmd
             subprocess.Popen(cmd)
 
     def get_screen_count(self, output):
@@ -295,14 +322,16 @@ class SwitchScreen(object):
             try:
                 pid = os.fork()
             except OSError as e:
-                sys.exit("Error : %s" % e.strerror)
+                logging.error(e)
+                sys.exit(1)
             
             if pid == 0:
                 os.setsid()
                 try:
                     pid = os.fork()
                 except OSError as e:
-                    sys.exit("Error : %s " % e.strerror)
+                    logging.error(e.strerror)
+                    sys.exit(1)
 
                 if pid == 0:
                     os.chdir(Configuration.getConfig().get_root_path())
@@ -316,7 +345,9 @@ class SwitchScreen(object):
             os.open(os.devnull, os.O_RDWR)
             os.dup2(0, 1)
             os.dup2(0, 2)
-            
+
+        log_handler.addHandler(logging.FileHandler(Configuration.getConfig().get_log_file(), encoding="UTF-8"))
+
     def main_loop(self):
         """ Process main loop """
         last_scr_count = self.check_screens()
@@ -393,6 +424,14 @@ def main():
         
     if options.show_conf:
         print config.show_config()
+        sys.exit()
+    
+    if options.stop_daemon == True:
+        sys.exit('--stop option is TODO. Use SIGINT or SIGKILL instead')
+    
+    if options.restart_daemon == True:
+        sys.exit('--restart option is TODO. Use SIGHUP instead')
+        
     
     switch = SwitchScreen()
     switch.daemonize()
