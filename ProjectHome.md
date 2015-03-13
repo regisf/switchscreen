@@ -1,0 +1,1 @@
+switchscreen allow to laptop users under X11 to plug and play external screen and apply configuration on the fly using xrandr as backend.
